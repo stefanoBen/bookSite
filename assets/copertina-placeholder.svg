@@ -1,0 +1,8 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1200'>
+<defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1f2530'/><stop offset='1' stop-color='#4a2f22'/></linearGradient></defs>
+<rect width='800' height='1200' fill='url(#g)'/>
+<rect x='40' y='40' width='720' height='1120' fill='none' stroke='#d7bf85' stroke-width='4'/>
+<text x='400' y='230' font-size='84' fill='#e4ce95' text-anchor='middle' font-family='Georgia'>IL CUSTODE</text>
+<text x='400' y='330' font-size='84' fill='#e4ce95' text-anchor='middle' font-family='Georgia'>DEI MIRACOLI</text>
+<text x='400' y='1020' font-size='62' fill='#e4ce95' text-anchor='middle' font-family='Georgia'>STEFANO BENEDETTI</text>
+</svg>
