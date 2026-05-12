@@ -25,6 +25,13 @@ body {
 .btn-primary { color: #fff; background: linear-gradient(180deg, #a51d24, var(--accent)); box-shadow: 0 8px 16px rgba(127,22,28,.2); }
 .btn-primary:hover { background: var(--accent-dark); }
 .btn-outline { border: 2px solid #a25656; color: #803838; }
+.btn-disabled, .btn-disabled:hover {
+  background: #b8b0b0;
+  box-shadow: none;
+  color: #f4eeee;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .hero { display: grid; grid-template-columns: 1fr 1.2fr; gap: 3rem; align-items: center; padding: 4rem 0 2rem; }
 .hero-cover img { width: 100%; max-width: 440px; border-radius: 10px; filter: drop-shadow(0 24px 30px rgba(0,0,0,.28)); }
 .hero-cover img:hover { transform: translateY(-2px); transition: transform .25s ease; }
