@@ -97,3 +97,12 @@ body {
   align-items: start;
   font-weight: 400;
 }
+
+
+.form-feedback {
+  background: #efe6d8;
+  border: 1px solid #ccbda8;
+  padding: .8rem 1rem;
+  border-radius: .5rem;
+  font-weight: 700;
+}

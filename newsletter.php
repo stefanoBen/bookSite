@@ -1,10 +1,21 @@
 <?php
 declare(strict_types=1);
 
-$configFile = __DIR__ . '/config.php';
-if (!file_exists($configFile)) {
-    http_response_code(500);
-    echo 'Config mancante: copia config.sample.php in config.php';
+$configCandidates = [
+    getenv('ICDM_CONFIG_PATH') ?: '',
+    __DIR__ . '/config.php',
+    __DIR__ . '/icdm_config/config.php',
+    dirname(__DIR__) . '/icdm_config/config.php',
+];
+$configFile = '';
+foreach ($configCandidates as $candidate) {
+    if ($candidate !== '' && file_exists($candidate)) {
+        $configFile = $candidate;
+        break;
+    }
+}
+if ($configFile === '') {
+    header('Location: contatti.html?newsletter=config-missing');
     exit;
 }
 $config = require $configFile;
@@ -20,11 +31,84 @@ function db(array $cfg): PDO {
     return $pdo;
 }
 
-function h(string $v): string { return htmlspecialchars($v, ENT_QUOTES, 'UTF-8'); }
 function tokenHash(string $v): string { return hash('sha256', $v); }
 function randomToken(): string { return rtrim(strtr(base64_encode(random_bytes(24)), '+/', '-_'), '='); }
 function ipBin(): ?string { return isset($_SERVER['REMOTE_ADDR']) ? @inet_pton($_SERVER['REMOTE_ADDR']) ?: null : null; }
 function now(): string { return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s'); }
+
+function sendTextMail(string $to, string $subject, string $message, array $site, array $smtp): bool {
+    $fromEmail = $site['from_email'];
+    $fromName = $site['from_name'];
+    $headers = [
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=UTF-8',
+        'From: ' . mb_encode_mimeheader($fromName, 'UTF-8') . ' <' . $fromEmail . '>',
+        'Reply-To: ' . $fromEmail,
+        'List-Unsubscribe: <mailto:' . $fromEmail . '?subject=unsubscribe>',
+        'X-Mailer: PHP/' . phpversion(),
+    ];
+
+    if (sendSmtpMail($to, $subject, $message, $headers, $site, $smtp)) {
+        return true;
+    }
+
+    return mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $message, implode("\r\n", $headers));
+}
+
+function sendSmtpMail(string $to, string $subject, string $message, array $headers, array $site, array $smtp): bool {
+    $host = $smtp['host'] ?? '';
+    $port = (int)($smtp['port'] ?? 465);
+    $username = $smtp['username'] ?? '';
+    $password = $smtp['password'] ?? '';
+    if ($host === '' || $username === '' || $password === '') return false;
+
+    $remote = ($port === 465 ? 'ssl://' : '') . $host;
+    $fp = @stream_socket_client($remote . ':' . $port, $errno, $errstr, 15);
+    if (!$fp) return false;
+
+    $read = static function($fp): string { return (string)fgets($fp, 512); };
+    $write = static function($fp, string $cmd): void { fwrite($fp, $cmd . "\r\n"); };
+    $expect = static function($line, string $code): bool { return str_starts_with((string)$line, $code); };
+
+    if (!$expect($read($fp), '220')) { fclose($fp); return false; }
+    $write($fp, 'EHLO ' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+    $ehlo = '';
+    do { $line = $read($fp); $ehlo .= $line; } while (isset($line[3]) && $line[3] === '-');
+    if (!str_starts_with($ehlo, '250')) { fclose($fp); return false; }
+
+    if ($port === 587 && stripos($ehlo, 'STARTTLS') !== false) {
+        $write($fp, 'STARTTLS');
+        if (!$expect($read($fp), '220')) { fclose($fp); return false; }
+        if (!stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) { fclose($fp); return false; }
+        $write($fp, 'EHLO ' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+        do { $line = $read($fp); } while (isset($line[3]) && $line[3] === '-');
+    }
+
+    $write($fp, 'AUTH LOGIN');
+    if (!$expect($read($fp), '334')) { fclose($fp); return false; }
+    $write($fp, base64_encode($username));
+    if (!$expect($read($fp), '334')) { fclose($fp); return false; }
+    $write($fp, base64_encode($password));
+    if (!$expect($read($fp), '235')) { fclose($fp); return false; }
+
+    $from = $site['from_email'];
+    $write($fp, 'MAIL FROM:<' . $from . '>');
+    if (!$expect($read($fp), '250')) { fclose($fp); return false; }
+    $write($fp, 'RCPT TO:<' . $to . '>');
+    if (!$expect($read($fp), '250')) { fclose($fp); return false; }
+    $write($fp, 'DATA');
+    if (!$expect($read($fp), '354')) { fclose($fp); return false; }
+
+    $payload = 'Subject: =?UTF-8?B?' . base64_encode($subject) . '?=' . "\r\n"
+        . implode("\r\n", $headers) . "\r\n\r\n"
+        . str_replace(["\r\n", "\r", "\n"], "\r\n", $message) . "\r\n.";
+    $write($fp, $payload);
+    if (!$expect($read($fp), '250')) { fclose($fp); return false; }
+
+    $write($fp, 'QUIT');
+    fclose($fp);
+    return true;
+}
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $pdo = db($config['db']);
@@ -33,7 +117,7 @@ if ($action === 'subscribe' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = mb_strtolower(trim((string)($_POST['email'] ?? '')));
     $name = trim((string)($_POST['full_name'] ?? ''));
     $consent = isset($_POST['consent']) ? 1 : 0;
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !$consent) {
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !$consent || $name === '') {
         header('Location: contatti.html?newsletter=invalid'); exit;
     }
 
@@ -51,8 +135,9 @@ if ($action === 'subscribe' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirmUrl = $config['site']['base_url'].'/newsletter.php?action=confirm&token='.$confirmToken;
     $subject = 'Conferma iscrizione newsletter - Il Custode dei Miracoli';
     $message = "Conferma la tua iscrizione cliccando qui: $confirmUrl";
-    @mail($email, $subject, $message, 'From: '.$config['site']['from_email']);
-    @mail($config['site']['ops_email'], 'Nuova richiesta iscrizione', "Richiesta iscrizione: $email");
+    $okSubscriber = sendTextMail($email, $subject, $message, $config['site'], $config['smtp'] ?? []);
+    sendTextMail($config['site']['ops_email'], 'Nuova richiesta iscrizione', "Richiesta iscrizione: $email", $config['site'], $config['smtp'] ?? []);
+    if (!$okSubscriber) { header('Location: contatti.html?newsletter=mail-failed'); exit; }
     header('Location: contatti.html?newsletter=check-email'); exit;
 }
 
@@ -70,7 +155,7 @@ if ($action === 'unsubscribe' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { header('Location: contatti.html?newsletter=invalid'); exit; }
     $stmt = $pdo->prepare('UPDATE icdm_subscribers SET status=\'unsubscribed\', unsubscribed_at=:now WHERE email=:email AND status IN (\'active\',\'pending\')');
     $stmt->execute([':now'=>now(), ':email'=>$email]);
-    @mail($config['site']['ops_email'], 'Disiscrizione newsletter', "Disiscrizione: $email");
+    sendTextMail($config['site']['ops_email'], 'Disiscrizione newsletter', "Disiscrizione: $email", $config['site'], $config['smtp'] ?? []);
     header('Location: contatti.html?newsletter=unsubscribed'); exit;
 }
 

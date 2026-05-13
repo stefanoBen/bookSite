@@ -1,4 +1,5 @@
 <?php
+// In produzione puoi salvare questo file fuori dalla webroot, esempio: /icdm_config/config.php
 return [
   'db' => [
     'host' => '31.11.39.185',

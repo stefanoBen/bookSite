@@ -10,7 +10,7 @@ Sito vetrina del libro con pagine **Home**, **Il Libro**, **Contatti** e base ne
 ## Setup newsletter (Aruba)
 1. Attiva **PHP 8.3** (è stabile e pienamente supportato dal codice attuale).
 2. Importa `newsletter_schema.sql` nel database MySQL.
-3. Copia `config.sample.php` in `config.php` e inserisci password DB/SMTP reali.
+3. Copia `config.sample.php` in `config.php` oppure in `/icdm_config/config.php` e inserisci password DB/SMTP reali.
 4. Verifica che `newsletter.php` sia raggiungibile sul dominio.
 5. Testa iscrizione dal form in `contatti.html`.
 
@@ -23,3 +23,5 @@ Sito vetrina del libro con pagine **Home**, **Il Libro**, **Contatti** e base ne
 ## Note operative
 - I pulsanti Amazon restano visibili ma disattivati fino all'apertura preordini.
 - Uscita libro indicata a **fine 2026** nelle pagine pubbliche.
+
+- Per ridurre spam: configura SPF/DKIM/DMARC e usa mittente coerente (`news@...`).
