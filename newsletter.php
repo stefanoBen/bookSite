@@ -45,14 +45,12 @@ function sendTextMail(string $to, string $subject, string $message, array $site,
         'From: ' . mb_encode_mimeheader($fromName, 'UTF-8') . ' <' . $fromEmail . '>',
         'Reply-To: ' . $fromEmail,
         'List-Unsubscribe: <mailto:' . $fromEmail . '?subject=unsubscribe>',
+        'Date: ' . gmdate('D, d M Y H:i:s') . ' +0000',
+        'Message-ID: <' . bin2hex(random_bytes(8)) . '@' . ($_SERVER['SERVER_NAME'] ?? 'localhost') . '>',
         'X-Mailer: PHP/' . phpversion(),
     ];
 
-    if (sendSmtpMail($to, $subject, $message, $headers, $site, $smtp)) {
-        return true;
-    }
-
-    return mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $message, implode("\r\n", $headers));
+    return sendSmtpMail($to, $subject, $message, $headers, $site, $smtp);
 }
 
 function sendSmtpMail(string $to, string $subject, string $message, array $headers, array $site, array $smtp): bool {
