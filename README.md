@@ -27,3 +27,5 @@ Sito vetrina del libro con pagine **Home**, **Il Libro**, **Contatti** e base ne
 - Per ridurre spam: configura SPF/DKIM/DMARC e usa mittente coerente (`news@...`).
 
 - L'invio newsletter usa SMTP autenticato del dominio (fallback `mail()` disabilitato per evitare ritardi/spam).
+
+- Ogni step newsletter ora registra eventi in `icdm_subscriber_events` (richiesta/conferma iscrizione, richiesta/conferma disiscrizione).

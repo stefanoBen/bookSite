@@ -108,6 +108,24 @@ function sendSmtpMail(string $to, string $subject, string $message, array $heade
     return true;
 }
 
+
+function logEvent(PDO $pdo, int $subscriberId, string $eventType, ?string $note = null): void {
+    $stmt = $pdo->prepare('INSERT INTO icdm_subscriber_events (subscriber_id, event_type, ip_address, note) VALUES (:subscriber_id, :event_type, :ip, :note)');
+    $stmt->execute([
+        ':subscriber_id' => $subscriberId,
+        ':event_type' => $eventType,
+        ':ip' => ipBin(),
+        ':note' => $note,
+    ]);
+}
+
+function findSubscriberId(PDO $pdo, string $email): ?int {
+    $stmt = $pdo->prepare('SELECT id FROM icdm_subscribers WHERE email = :email LIMIT 1');
+    $stmt->execute([':email' => $email]);
+    $id = $stmt->fetchColumn();
+    return $id !== false ? (int)$id : null;
+}
+
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $pdo = db($config['db']);
 
@@ -130,6 +148,11 @@ if ($action === 'subscribe' && $_SERVER['REQUEST_METHOD'] === 'POST') {
       ':consent_at'=>now(), ':confirm_expires_at'=>$expires, ':source_page'=>'website', ':ip'=>ipBin(), ':ua'=>substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''),0,255)
     ]);
 
+    $subscriberId = findSubscriberId($pdo, $email);
+    if ($subscriberId !== null) {
+        logEvent($pdo, $subscriberId, 'subscribe_request');
+    }
+
     $confirmUrl = $config['site']['base_url'].'/newsletter.php?action=confirm&token='.$confirmToken;
     $subject = 'Conferma iscrizione newsletter - Il Custode dei Miracoli';
     $message = "Conferma la tua iscrizione cliccando qui: $confirmUrl";
@@ -144,6 +167,14 @@ if ($action === 'confirm' && isset($_GET['token'])) {
     $stmt = $pdo->prepare('UPDATE icdm_subscribers SET status=\'active\', confirmed_at=:now WHERE confirm_token_hash=:hash AND status=\'pending\' AND confirm_expires_at >= :now');
     $current = now();
     $stmt->execute([':now'=>$current, ':hash'=>$hash]);
+    if ($stmt->rowCount() > 0) {
+        $subStmt = $pdo->prepare('SELECT id FROM icdm_subscribers WHERE confirm_token_hash = :hash LIMIT 1');
+        $subStmt->execute([':hash' => $hash]);
+        $subscriberId = $subStmt->fetchColumn();
+        if ($subscriberId !== false) {
+            logEvent($pdo, (int)$subscriberId, 'subscribe_confirmed');
+        }
+    }
     echo $stmt->rowCount() ? 'Iscrizione confermata con successo.' : 'Token non valido o scaduto.';
     exit;
 }
@@ -153,6 +184,13 @@ if ($action === 'unsubscribe' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { header('Location: contatti.html?newsletter=invalid'); exit; }
     $stmt = $pdo->prepare('UPDATE icdm_subscribers SET status=\'unsubscribed\', unsubscribed_at=:now WHERE email=:email AND status IN (\'active\',\'pending\')');
     $stmt->execute([':now'=>now(), ':email'=>$email]);
+    $subscriberId = findSubscriberId($pdo, $email);
+    if ($subscriberId !== null) {
+        logEvent($pdo, $subscriberId, 'unsubscribe_request');
+        if ($stmt->rowCount() > 0) {
+            logEvent($pdo, $subscriberId, 'unsubscribe_confirmed');
+        }
+    }
     sendTextMail($config['site']['ops_email'], 'Disiscrizione newsletter', "Disiscrizione: $email", $config['site'], $config['smtp'] ?? []);
     header('Location: contatti.html?newsletter=unsubscribed'); exit;
 }
