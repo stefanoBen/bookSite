@@ -39,13 +39,17 @@ function now(): string { return (new DateTimeImmutable('now', new DateTimeZone('
 
 function buildConfirmationEmailHtml(array $site, string $confirmUrl): string {
     $base = rtrim($site['base_url'], '/');
-    $coverUrl = $base . '/assets/copertina-placeholder.webp';
+    $coverUrl = $base . '/assets/email/book-newsletter.webp';
+    $headerUrl = $base . '/assets/email/header-newsletter.svg';
+    $footerUrl = $base . '/assets/email/footer-newsletter.svg';
+    $buttonUrl = $base . '/assets/email/button-conferma.svg';
     $safeUrl = htmlspecialchars($confirmUrl, ENT_QUOTES, 'UTF-8');
     return '<!doctype html><html><body style="margin:0;padding:0;background:#efefeb;font-family:Georgia,Times New Roman,serif;color:#112133;">'
         . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;">'
         . '<tr><td align="center">'
         . '<table role="presentation" width="700" cellpadding="0" cellspacing="0" style="max-width:700px;background:#f8f5ef;border:1px solid #d8c8a5;border-radius:16px;overflow:hidden;">'
-        . '<tr><td style="background:linear-gradient(90deg,#021a30,#0a2f50);padding:24px 28px;color:#e6c078;">'
+        . '<tr><td style="padding:0;"><img src="' . $headerUrl . '" alt="Header newsletter" width="700" style="display:block;width:100%;height:auto;"></td></tr>'
+        . '<tr><td style="background:#032241;padding:10px 28px 18px;color:#e6c078;">'
         . '<table role="presentation" width="100%"><tr>'
         . '<td style="width:160px;"><img src="' . $coverUrl . '" alt="Il Custode dei Miracoli" width="130" style="display:block;border-radius:8px;"></td>'
         . '<td style="font-size:32px;line-height:1.2;font-weight:bold;text-align:right;">NEWSLETTER UFFICIALE</td>'
@@ -55,10 +59,10 @@ function buildConfirmationEmailHtml(array $site, string $confirmUrl): string {
         . '<p style="margin:0 0 18px;font-size:22px;color:#9b7b33;font-style:italic;">Stefano Benedetti</p>'
         . '<p style="margin:0 0 12px;font-size:22px;line-height:1.5;">Grazie per esserti iscritto. Con un solo clic puoi confermare la tua iscrizione alla newsletter ufficiale.</p>'
         . '<p style="margin:0 0 26px;font-size:22px;line-height:1.5;">Riceverai aggiornamenti sullo stato di pubblicazione del libro <em>Il Custode dei Miracoli</em>, anticipazioni e contenuti esclusivi.</p>'
-        . '<p style="text-align:center;margin:0 0 24px;"><a href="' . $safeUrl . '" style="display:inline-block;background:#032241;border:2px solid #d9ae53;color:#f3cc79;text-decoration:none;font-size:36px;letter-spacing:1px;padding:22px 38px;border-radius:16px;font-weight:bold;">CONFERMA ISCRIZIONE</a></p>'
+        . '<p style="text-align:center;margin:0 0 24px;"><a href="' . $safeUrl . '" style="display:inline-block;"><img src="' . $buttonUrl . '" alt="Conferma iscrizione" width="560" style="display:block;max-width:100%;height:auto;border:0;"></a></p>'
         . '<p style="margin:0;text-align:center;font-size:17px;color:#34485e;">Se non sei stato tu a richiedere l\'iscrizione, puoi ignorare questa email.</p>'
         . '</td></tr>'
-        . '<tr><td style="background:#efe3cc;border-top:1px solid #d4b67f;padding:18px;text-align:center;color:#0c2238;font-size:34px;">Il Custode dei Miracoli · Stefano Benedetti</td></tr>'
+        . '<tr><td style="padding:0;"><img src="' . $footerUrl . '" alt="Footer newsletter" width="700" style="display:block;width:100%;height:auto;"></td></tr>'
         . '</table></td></tr></table></body></html>';
 }
 
