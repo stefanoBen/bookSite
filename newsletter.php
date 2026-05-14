@@ -40,9 +40,9 @@ function now(): string { return (new DateTimeImmutable('now', new DateTimeZone('
 function buildConfirmationEmailHtml(array $site, string $confirmUrl): string {
     $base = rtrim($site['base_url'], '/');
     $coverUrl = $base . '/assets/email/book-newsletter.webp';
-    $headerUrl = $base . '/assets/email/header-newsletter.svg';
-    $footerUrl = $base . '/assets/email/footer-newsletter.svg';
-    $buttonUrl = $base . '/assets/email/button-conferma.svg';
+    $headerUrl = $base . '/assets/email/header-newsletter.png';
+    $footerUrl = $base . '/assets/email/footer-newsletter.png';
+    $buttonUrl = $base . '/assets/email/button-conferma.png';
     $safeUrl = htmlspecialchars($confirmUrl, ENT_QUOTES, 'UTF-8');
     return '<!doctype html><html><body style="margin:0;padding:0;background:#efefeb;font-family:Georgia,Times New Roman,serif;color:#112133;">'
         . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;">'
