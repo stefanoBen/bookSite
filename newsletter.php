@@ -37,33 +37,85 @@ function ipBin(): ?string { return isset($_SERVER['REMOTE_ADDR']) ? @inet_pton($
 function now(): string { return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s'); }
 
 
-function buildConfirmationEmailHtml(array $site, string $confirmUrl): string {
+function buildEmailHtml(array $site, string $title, string $subtitle, array $paragraphs, ?string $buttonUrl = null, ?string $buttonLabel = null): string {
     $base = rtrim($site['base_url'], '/');
-    $coverUrl = $base . '/assets/email/book-newsletter.webp';
     $headerUrl = $base . '/assets/email/header-newsletter.png';
     $footerUrl = $base . '/assets/email/footer-newsletter.png';
-    $buttonUrl = $base . '/assets/email/button-conferma.png';
-    $safeUrl = htmlspecialchars($confirmUrl, ENT_QUOTES, 'UTF-8');
-    return '<!doctype html><html><body style="margin:0;padding:0;background:#efefeb;font-family:Georgia,Times New Roman,serif;color:#112133;">'
+    $buttonImageUrl = $base . '/assets/email/button-conferma.png';
+
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $safeSubtitle = htmlspecialchars($subtitle, ENT_QUOTES, 'UTF-8');
+
+    $html = '<!doctype html><html><body style="margin:0;padding:0;background:#efefeb;font-family:Georgia,Times New Roman,serif;color:#112133;">'
         . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;">'
         . '<tr><td align="center">'
         . '<table role="presentation" width="700" cellpadding="0" cellspacing="0" style="max-width:700px;background:#f8f5ef;border:1px solid #d8c8a5;border-radius:16px;overflow:hidden;">'
-        . '<tr><td style="padding:0;"><img src="' . $headerUrl . '" alt="Header newsletter" width="700" style="display:block;width:100%;height:auto;"></td></tr>'
-        . '<tr><td style="background:#032241;padding:10px 28px 18px;color:#e6c078;">'
-        . '<table role="presentation" width="100%"><tr>'
-        . '<td style="width:160px;"><img src="' . $coverUrl . '" alt="Il Custode dei Miracoli" width="130" style="display:block;border-radius:8px;"></td>'
-        . '<td style="font-size:32px;line-height:1.2;font-weight:bold;text-align:right;">NEWSLETTER UFFICIALE</td>'
-        . '</tr></table></td></tr>'
+        . '<tr><td style="padding:0;"><img src="' . $headerUrl . '" alt="Header newsletter" width="700" style="display:block;width:100%;height:auto;border:0;outline:none;text-decoration:none;"></td></tr>'
         . '<tr><td style="padding:34px 44px 22px;">'
-        . '<h1 style="margin:0 0 14px;font-size:56px;line-height:1.05;color:#0b1b2e;">Conferma la tua iscrizione</h1>'
-        . '<p style="margin:0 0 18px;font-size:22px;color:#9b7b33;font-style:italic;">Stefano Benedetti</p>'
-        . '<p style="margin:0 0 12px;font-size:22px;line-height:1.5;">Grazie per esserti iscritto. Con un solo clic puoi confermare la tua iscrizione alla newsletter ufficiale.</p>'
-        . '<p style="margin:0 0 26px;font-size:22px;line-height:1.5;">Riceverai aggiornamenti sullo stato di pubblicazione del libro <em>Il Custode dei Miracoli</em>, anticipazioni e contenuti esclusivi.</p>'
-        . '<p style="text-align:center;margin:0 0 24px;"><a href="' . $safeUrl . '" style="display:inline-block;"><img src="' . $buttonUrl . '" alt="Conferma iscrizione" width="560" style="display:block;max-width:100%;height:auto;border:0;"></a></p>'
-        . '<p style="margin:0;text-align:center;font-size:17px;color:#34485e;">Se non sei stato tu a richiedere l\'iscrizione, puoi ignorare questa email.</p>'
+        . '<h1 style="margin:0 0 14px;font-size:40px;line-height:1.15;color:#0b1b2e;">' . $safeTitle . '</h1>'
+        . '<p style="margin:0 0 18px;font-size:22px;color:#9b7b33;font-style:italic;">' . $safeSubtitle . '</p>';
+
+    foreach ($paragraphs as $paragraph) {
+        $html .= '<p style="margin:0 0 14px;font-size:22px;line-height:1.5;">' . $paragraph . '</p>';
+    }
+
+    if ($buttonUrl !== null && $buttonLabel !== null) {
+        $safeUrl = htmlspecialchars($buttonUrl, ENT_QUOTES, 'UTF-8');
+        $safeLabel = htmlspecialchars($buttonLabel, ENT_QUOTES, 'UTF-8');
+        $html .= '<p style="text-align:center;margin:8px 0 24px;">'
+            . '<a href="' . $safeUrl . '" style="display:inline-block;text-decoration:none;">'
+            . '<img src="' . $buttonImageUrl . '" alt="' . $safeLabel . '" width="560" style="display:block;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">'
+            . '</a></p>';
+    }
+
+    $html .= '<p style="margin:0;text-align:center;font-size:17px;color:#34485e;">Se non sei stato tu, puoi ignorare questa email.</p>'
         . '</td></tr>'
-        . '<tr><td style="padding:0;"><img src="' . $footerUrl . '" alt="Footer newsletter" width="700" style="display:block;width:100%;height:auto;"></td></tr>'
+        . '<tr><td style="padding:0;"><img src="' . $footerUrl . '" alt="Footer newsletter" width="700" style="display:block;width:100%;height:auto;border:0;outline:none;text-decoration:none;"></td></tr>'
         . '</table></td></tr></table></body></html>';
+
+    return $html;
+}
+
+function buildConfirmationEmailHtml(array $site, string $confirmUrl): string {
+    return buildEmailHtml(
+        $site,
+        'Conferma la tua iscrizione',
+        'Stefano Benedetti',
+        [
+            'Abbiamo ricevuto una richiesta di iscrizione alla newsletter ufficiale.',
+            'Per attivare l\'iscrizione e iniziare a ricevere aggiornamenti su <em>Il Custode dei Miracoli</em>, clicca sul pulsante qui sotto.'
+        ],
+        $confirmUrl,
+        'Conferma iscrizione'
+    );
+}
+
+function buildWelcomeEmailHtml(array $site): string {
+    return buildEmailHtml(
+        $site,
+        'Iscrizione confermata',
+        'Benvenuto nella newsletter',
+        [
+            'Benvenuto: la tua iscrizione alla newsletter ufficiale è andata a buon fine.',
+            'Da questo momento riceverai aggiornamenti sul libro, anticipazioni e novità sul percorso di pubblicazione.'
+        ],
+        null,
+        null
+    );
+}
+
+function buildUnsubscribeEmailHtml(array $site): string {
+    return buildEmailHtml(
+        $site,
+        'Disiscrizione confermata',
+        'Ci dispiace vederti andare via',
+        [
+            'La tua disiscrizione è stata completata correttamente e non riceverai più newsletter.',
+            'Se in futuro vorrai tornare, potrai iscriverti nuovamente dal sito ufficiale in qualsiasi momento.'
+        ],
+        null,
+        null
+    );
 }
 
 function sendTextMail(string $to, string $subject, string $textMessage, array $site, array $smtp, ?string $htmlMessage = null): bool {
@@ -210,11 +262,14 @@ if ($action === 'confirm' && isset($_GET['token'])) {
     $current = now();
     $stmt->execute([':now'=>$current, ':hash'=>$hash]);
     if ($stmt->rowCount() > 0) {
-        $subStmt = $pdo->prepare('SELECT id FROM icdm_subscribers WHERE confirm_token_hash = :hash LIMIT 1');
+        $subStmt = $pdo->prepare('SELECT id, email FROM icdm_subscribers WHERE confirm_token_hash = :hash LIMIT 1');
         $subStmt->execute([':hash' => $hash]);
-        $subscriberId = $subStmt->fetchColumn();
-        if ($subscriberId !== false) {
-            logEvent($pdo, (int)$subscriberId, 'subscribe_confirmed');
+        $subscriber = $subStmt->fetch();
+        if (is_array($subscriber)) {
+            logEvent($pdo, (int)$subscriber['id'], 'subscribe_confirmed');
+            $welcomeText = 'La tua iscrizione alla newsletter è confermata. Da ora riceverai aggiornamenti sul libro.';
+            $welcomeHtml = buildWelcomeEmailHtml($config['site']);
+            sendTextMail((string)$subscriber['email'], 'Benvenuto nella newsletter - Il Custode dei Miracoli', $welcomeText, $config['site'], $config['smtp'] ?? [], $welcomeHtml);
         }
     }
     echo $stmt->rowCount() ? 'Iscrizione confermata con successo.' : 'Token non valido o scaduto.';
@@ -224,7 +279,7 @@ if ($action === 'confirm' && isset($_GET['token'])) {
 if ($action === 'unsubscribe' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = mb_strtolower(trim((string)($_POST['email'] ?? '')));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { header('Location: contatti.html?newsletter=invalid'); exit; }
-    $stmt = $pdo->prepare('UPDATE icdm_subscribers SET status=\'unsubscribed\', unsubscribed_at=:now WHERE email=:email AND status IN (\'active\',\'pending\')');
+    $stmt = $pdo->prepare('UPDATE icdm_subscribers SET status=\'unsubscribed\', unsubscribed_at=:now WHERE email=:email AND status = \'active\'');
     $stmt->execute([':now'=>now(), ':email'=>$email]);
     $subscriberId = findSubscriberId($pdo, $email);
     if ($subscriberId !== null) {
@@ -232,6 +287,11 @@ if ($action === 'unsubscribe' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->rowCount() > 0) {
             logEvent($pdo, $subscriberId, 'unsubscribe_confirmed');
         }
+    }
+    if ($stmt->rowCount() > 0) {
+        $goodbyeText = 'La tua disiscrizione dalla newsletter è confermata. Ci dispiace vederti andare via.';
+        $goodbyeHtml = buildUnsubscribeEmailHtml($config['site']);
+        sendTextMail($email, 'Disiscrizione confermata - Il Custode dei Miracoli', $goodbyeText, $config['site'], $config['smtp'] ?? [], $goodbyeHtml);
     }
     sendTextMail($config['site']['ops_email'], 'Disiscrizione newsletter', "Disiscrizione: $email", $config['site'], $config['smtp'] ?? [], null);
     header('Location: contatti.html?newsletter=unsubscribed'); exit;
