@@ -4,7 +4,7 @@ Sito vetrina del libro con pagine **Home**, **Il Libro**, **Contatti** e base ne
 
 ## Stack
 - HTML/CSS/JS statico per front-end.
-- PHP 8.3 consigliato (compatibile Aruba) per iscrizione/disiscrizione newsletter.
+- PHP 8.3 consigliato (compatibile Aruba) per iscrizione/cancellazione newsletter.
 - MySQL 8 (Percona) per gestione iscritti.
 
 ## Setup newsletter (Aruba)
@@ -28,4 +28,4 @@ Sito vetrina del libro con pagine **Home**, **Il Libro**, **Contatti** e base ne
 
 - L'invio newsletter usa SMTP autenticato del dominio (fallback `mail()` disabilitato per evitare ritardi/spam).
 
-- Ogni step newsletter ora registra eventi in `icdm_subscriber_events` (richiesta/conferma iscrizione, richiesta/conferma disiscrizione).
+- Ogni step newsletter ora registra eventi in `icdm_subscriber_events` (richiesta/conferma iscrizione, richiesta/conferma cancellazione dalla newsletter).

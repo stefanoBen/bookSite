@@ -93,18 +93,30 @@ body {
   font: inherit;
 }
 .newsletter-form .consent {
-  display: flex;
-  gap: .55rem;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: .55rem;
+  align-items: start;
   font-weight: 400;
   line-height: 1.5;
+  margin: .8rem 0 1rem;
 }
+
 .newsletter-form .consent input {
-  margin-top: .25rem;
+  margin-top: .35em;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
 }
-.newsletter-form .consent a {
+
+.newsletter-form .consent-text {
+  display: block;
+  min-width: 0;
+}
+
+.newsletter-form .consent-text a {
   white-space: nowrap;
+  text-decoration: underline;
 }
 
 
