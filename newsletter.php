@@ -300,7 +300,8 @@ if ($action === 'confirm' && isset($_GET['token'])) {
             sendTextMail((string)$subscriber['email'], 'Benvenuto nella newsletter - Il Custode dei Miracoli', $welcomeText, $config['site'], $config['smtp'] ?? [], $welcomeHtml);
         }
     }
-    echo $stmt->rowCount() ? 'Iscrizione confermata con successo.' : 'Token non valido o scaduto.';
+    if ($stmt->rowCount() > 0) { header('Location: iscrizione-completata.html'); exit; }
+    echo 'Token non valido o scaduto.';
     exit;
 }
 
@@ -311,8 +312,13 @@ if ($action === 'unsubscribe_token' && isset($_GET['token'])) {
     $stmt->execute([':now'=>now(), ':id'=>$decoded['id'], ':email'=>$decoded['email']]);
     if ($stmt->rowCount() > 0) {
         logEvent($pdo, (int)$decoded['id'], 'unsubscribe_confirmed', 'one-click');
+        $goodbyeText = 'La tua disiscrizione dalla newsletter è confermata. Ci dispiace vederti andare via.';
+        $goodbyeHtml = buildUnsubscribeEmailHtml($config['site']);
+        sendTextMail((string)$decoded['email'], 'Disiscrizione confermata - Il Custode dei Miracoli', $goodbyeText, $config['site'], $config['smtp'] ?? [], $goodbyeHtml);
+        header('Location: disiscrizione-completata.html');
+        exit;
     }
-    echo 'Disiscrizione completata. Non riceverai più comunicazioni dalla newsletter.';
+    echo 'Email non trovata tra le iscrizioni attive.';
     exit;
 }
 
@@ -332,9 +338,10 @@ if ($action === 'unsubscribe' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $goodbyeText = 'La tua disiscrizione dalla newsletter è confermata. Ci dispiace vederti andare via.';
         $goodbyeHtml = buildUnsubscribeEmailHtml($config['site']);
         sendTextMail($email, 'Disiscrizione confermata - Il Custode dei Miracoli', $goodbyeText, $config['site'], $config['smtp'] ?? [], $goodbyeHtml);
+        sendTextMail($config['site']['ops_email'], 'Disiscrizione newsletter', "Disiscrizione: $email", $config['site'], $config['smtp'] ?? [], null);
+        header('Location: disiscrizione-completata.html'); exit;
     }
-    sendTextMail($config['site']['ops_email'], 'Disiscrizione newsletter', "Disiscrizione: $email", $config['site'], $config['smtp'] ?? [], null);
-    header('Location: contatti.html?newsletter=unsubscribed'); exit;
+    header('Location: contatti.html?newsletter=not-active'); exit;
 }
 
 http_response_code(400);

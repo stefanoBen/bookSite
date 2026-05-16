@@ -93,9 +93,18 @@ body {
   font: inherit;
 }
 .newsletter-form .consent {
-  grid-template-columns: 20px 1fr;
-  align-items: start;
+  display: flex;
+  gap: .55rem;
+  align-items: flex-start;
   font-weight: 400;
+  line-height: 1.5;
+}
+.newsletter-form .consent input {
+  margin-top: .25rem;
+  flex: 0 0 auto;
+}
+.newsletter-form .consent a {
+  white-space: nowrap;
 }
 
 
